@@ -1,5 +1,21 @@
 
+const ReferralIncome = require("../models/ReferralIncome");
 const User = require("../models/User");
+
+// GET /api/referrals/income
+exports.getReferralIncome = async (req, res) => {
+  try {
+    const income = await ReferralIncome.find({ receiver: req.user._id })
+      .populate("generatedBy", "fullName referralCode")
+      .sort({ date: -1 })
+      .lean();
+    return res.status(200).json({ success: true, data: income });
+  } catch (error) {
+    console.error("Referral Income Error:", error);
+    return res.status(500).json({ success: false, message: "Server error while fetching referral income" });
+  }
+};
+
 
 // GET /api/referrals/direct
 // Fetch users directly referred by the logged-in user.
@@ -126,9 +142,6 @@ exports.getReferralTree = async (req, res) => {
   } catch (error) {
     console.error("Referral Tree Error:", error);
 
-    return res.status(500).json({
-      success: false,
-      message: "Server error while fetching referral tree"
-    });
+    return res.status(500).json({ success: false, message: "Server error while fetching referral tree" });
   }
 };

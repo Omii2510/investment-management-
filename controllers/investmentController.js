@@ -6,6 +6,16 @@ const ROIHistory = require("../models/ROIHistory");
 const investmentPlans = require("../config/investmentPlans");
 const distributeReferralCommissions = require("../utils/referralCommissions");
 
+// 0. GET ALL PLANS
+exports.getPlans = (req, res) => {
+  const plans = investmentPlans
+    .filter((p) => p.enabled)
+    .map(({ planCode, planName, minAmount, maxAmount, durationDays, dailyROIPercentage, description }) => ({
+      planCode, planName, minAmount, maxAmount, durationDays, dailyROIPercentage, description
+    }));
+  return res.status(200).json({ success: true, data: plans });
+};
+
 // 1. CREATE INVESTMENT
 exports.createInvestment = async (req, res) => {
   try {
@@ -212,7 +222,29 @@ exports.getUserInvestments = async (req, res) => {
 };
 
 
-// 4. GET INVESTMENT BY ID
+// 4. GET ROI HISTORY FOR AN INVESTMENT
+exports.getROIHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid investment ID" });
+    }
+    const investment = await Investment.findOne({ _id: id, user: req.user._id }).lean();
+    if (!investment) {
+      return res.status(404).json({ success: false, message: "Investment not found" });
+    }
+    const history = await ROIHistory.find({ investment: id })
+      .sort({ date: -1 })
+      .lean();
+    return res.status(200).json({ success: true, data: history });
+  } catch (error) {
+    console.error("ROI History Error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+// 5. GET INVESTMENT BY ID
 exports.getInvestmentById = async (req, res) => {
   try {
     const { id } = req.params;

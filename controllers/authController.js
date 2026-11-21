@@ -1,6 +1,5 @@
 
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 // Generate JWT Token
@@ -23,7 +22,7 @@ exports.registerUser = async (req, res) => {
       referralCode
     } = req.body;
 
-    if (!fullName || !email || !mobileNumber || !password || !referralCode) {
+    if (!fullName || !email || !mobileNumber || !password) {
       return res.status(400).json({
         success: false,
         message: "All fields are required"
@@ -60,17 +59,20 @@ exports.registerUser = async (req, res) => {
       });
     }
 
-    // Verify referral code
-    const referrer = await User.findOne({
-      referralCode: referralCode.toUpperCase().trim(),
-      accountStatus: "Active"
-    });
-
-    if (!referrer) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid referral code"
+    // Verify referral code if provided
+    let referrerId = null;
+    if (referralCode) {
+      const referrer = await User.findOne({
+        referralCode: referralCode.toUpperCase().trim(),
+        accountStatus: "Active"
       });
+      if (!referrer) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid referral code"
+        });
+      }
+      referrerId = referrer._id;
     }
 
     // Generate unique referral code
@@ -84,7 +86,7 @@ exports.registerUser = async (req, res) => {
       mobileNumber,
       password,
       referralCode: newReferralCode,
-      referredBy: referrer._id
+      referredBy: referrerId
     });
 
     const token = generateToken(user._id);
@@ -153,11 +155,7 @@ exports.loginUser = async (req, res) => {
       });
     }
 
-    // Compare password with bcrypt hash
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
       return res.status(401).json({

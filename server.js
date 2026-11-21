@@ -3,22 +3,29 @@ require("dotenv").config();
 
 const express = require("express");
 const helmet = require("helmet");
+const cors = require("cors");
 const connectDB = require("./config/db");
 
 // Import middleware
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
+const { scheduleDailyROIJob } = require("./jobs/dailyROIJob");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
 const investmentRoutes = require("./routes/investmentRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const referralRoutes = require("./routes/referralRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
 // Security middleware
 app.disable("x-powered-by");
 app.use(helmet());
+app.use(cors({
+  origin: (origin, callback) => callback(null, true),
+  credentials: true
+}));
 
 // Request middleware
 app.use(express.json({ limit: "10kb" }));
@@ -43,6 +50,9 @@ app.use("/api/dashboard", dashboardRoutes);
 // Referral APIs
 app.use("/api/referrals", referralRoutes);
 
+// Admin APIs
+app.use("/api/admin", adminRoutes);
+
 // Handle undefined routes
 app.use(notFound);
 
@@ -61,6 +71,9 @@ const startServer = async () => {
       console.log("MongoDB connection established.");
       console.log(`Server running on port ${PORT}`);
       console.log("Security middleware enabled.");
+
+      // Start cron scheduler after DB is connected
+      scheduleDailyROIJob();
     });
 
   } catch (error) {

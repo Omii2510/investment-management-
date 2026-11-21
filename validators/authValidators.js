@@ -31,9 +31,8 @@ const registerValidator = [
     .withMessage("Password must be between 8 and 128 characters"),
 
   body("referralCode")
+    .optional({ checkFalsy: true })
     .trim()
-    .notEmpty()
-    .withMessage("Referral code is required")
     .isLength({ max: 30 })
     .withMessage("Referral code cannot exceed 30 characters")
 ];

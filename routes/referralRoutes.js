@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const {
+  getReferralIncome,
   getDirectReferrals,
   getReferralTree
 } = require("../controllers/referralController");
@@ -10,6 +11,7 @@ const {
 const { protect } = require("../middleware/authMiddleware");
 
 // Protected referral routes
+router.get("/income", protect, getReferralIncome);
 router.get("/direct", protect, getDirectReferrals);
 router.get("/tree", protect, getReferralTree);
 
